@@ -1,169 +1,218 @@
-import pyautogui
+import pyautogui as p
 import time
 import os
 
 # Find Ordered Item
 # Location: 'items/ordered_item/<item>
-CONF = 0.8
+CONF = 0.95
 MOUSE_SPEED = 0.20
 COFFEE_LOCATIONS = [(337, 717), (406, 726), (480, 733)]
-MS_LOCATIONS = [(635, 703), (671, 617), (706, 537)]
+MS_LOCATIONS = [(637, 688), (678, 602), (702, 523)]
 OVEN_LOCATIONS = [(1462, 591), (1437, 707), (1417, 816), (1393, 941)]
-# ORDER_REGIONS = [
-#     (282, 130, 156, 266),
-#     (632, 139, 161, 273),
-#     (974, 136, 156, 268),
-#     (1321, 138, 160, 272)
-# ]
 
 ORDER_REGIONS = [
-    (300, 120, 128, 128),
-    (300, 150, 128, 128),
-    (300, 200, 128, 128),
-    (300, 230, 128, 128),
-    (300, 280, 128, 128),
-
-    (650, 120, 128, 128),
-    (650, 150, 128, 128),
-    (650, 200, 128, 128),
-    (650, 230, 128, 128),
-    (650, 280, 128, 128),
-
-    (990, 120, 128, 128),
-    (990, 150, 128, 128),
-    (990, 200, 128, 128),
-    (990, 230, 128, 128),
-    (990, 280, 128, 128),
-
-    (1340, 120, 128, 128),
-    (1340, 150, 128, 128),
-    (1340, 200, 128, 128),
-    (1340, 230, 128, 128),
-    (1340, 280, 128, 128),
+    (280, 130, 160, 300),
+    (630, 130, 160, 300),
+    (970, 130, 160, 300),
+    (1320, 130, 160, 300),
 ]
 
-PAN = (1057, 690)
+PAN_LOCATIONS = [
+    # (846, 688),
+    # (866, 582),
+    # (1046, 586),
+    (1058, 690)
+]
+MENU = [
+    'vanilla', 'chocolate', 'custard',
+    'strawberry_vanilla',  # 'strawberry_chocolate', 'strawberry_custard',
+    # 'peach_vanilla',
+    'peach_chocolate', 'peach_custard',
+    # 'blueberry_vanilla', 'blueberry_chocolate', 'blueberry_custard',
+    'coffee', 'milkshake'
+]
+ORDER = []
+CAKE_QUEUE = []
+
+
+class Cake:
+    def __init__(self, flavor, location, oven):
+        print("Making {}".format(flavor))
+        self.frosting = None
+        self.topping = None
+        self.flavor = flavor
+        self.delivery_location = location
+        self.oven_location = oven
+        self.countdown = 21
+        self.set_topping()
+        print("frosting: {}\t topping: {}".format(self.frosting, self.topping))
+        self.make_cake()
+        self.baking()
+
+    def update(self, val):
+        self.countdown -= val
+        return self.countdown
+
+    def set_topping(self):
+        if self.flavor == 'vanilla':
+            self.frosting = (1240, 623)
+        if self.flavor == 'strawberry_vanilla':
+            self.frosting = (1240, 623)
+            self.topping = (960, 801)
+        if self.flavor == 'chocolate':
+            self.frosting = (1275, 716)
+        if self.flavor == 'peach_chocolate':
+            self.frosting = (1275, 716)
+            self.topping = (860, 800)
+        if self.flavor == 'custard':
+            self.frosting = (1216, 533)
+        if self.flavor == 'peach_custard':
+            self.frosting = (1216, 533)
+            self.topping = (860, 800)
+
+    def make_cake(self):
+        addMold = click((953, 917))
+        # Add Frosting
+        serve_item(self.frosting, PAN_LOCATIONS[0])
+        # Add self.topping
+        if self.topping:
+            serve_item(self.topping, PAN_LOCATIONS[0])
+        print("Created Cake")
+
+    def baking(self):
+        if len(CAKE_QUEUE) == 4:
+            print("Waiting for oven")
+            remaining_time = 21
+            for cake in CAKE_QUEUE:
+                if cake.get_time() < remaining_time:
+                    remaining_time = cake.get_time()
+            time.sleep(remaining_time * 0.2)
+            update_queue(remaining_time)
+        print("Placing Cake in oven")
+        serve_item(PAN_LOCATIONS[0], self.oven_location)
+        CAKE_QUEUE.append(self)
+
+    def serve_cake(self):
+        print("Taking cake out of oven")
+        serve_item(self.oven_location, self.delivery_location)
+        print("Serving cake to customer")
 
 
 def restart(location):
     time.sleep(5)
-    create_order.counter = 0
-    create_order.mscounter = 0
-    pyautogui.click(1360, 941)
+    prepare.coffee_count = 0
+    prepare.mscounter = 0
+    ORDER = []
+    p.click(1360, 941)
     time.sleep(6)
-    pyautogui.click(626, 834)
+    p.click(626, 834)
 
 
-def carry_it(start, stop):
-    pyautogui.moveTo(start[0], start[1], MOUSE_SPEED)
-    pyautogui.dragTo(stop[0], stop[1], MOUSE_SPEED, button='left')
+def store_data():
+    """This will be used to capture images of a particular region to test a machine learning
+    algorithm if the tests are successful"""
+    pass
 
 
-def find_order(rgn):
-    possibleItems = ['vanilla.png', 'chocolate.png', 'custard.png',
-                     'strawberry_vanilla.png', 'coffee.png', 'milk_shake.png', 'coffee.png', 'milk_shake.png']
-    restart_button = pyautogui.locateCenterOnScreen(
-        'items/served_items/restart.png')
-    if restart_button:
-        restart(restart_button)
-    for item in possibleItems:
-        searchFor = 'items/ordered_item/{}'.format(item)
-        locateItem = pyautogui.locateCenterOnScreen(
-            searchFor, region=rgn, confidence=CONF)
-        if locateItem:
-            print("Position: {}".format(locateItem))
-            itemCenter = create_order(item)
-            serve_item(locateItem, itemCenter)
-    return
+def click(loc):
+    # Takes 0.2 secs to execute
+    p.moveTo(loc[0], loc[1], MOUSE_SPEED)
+    p.click()
+    update_queue(1)
 
 
-def make_cake(flavor):
-    make_cake.counter += 1
-    # Mold 953, 917
-    frosting = None
-    topping = None
-    if flavor == 'vanilla':
-        frosting = (1240, 623)
-    if flavor == 'strawberry_vanilla':
-        frosting = (1240, 623)
-        topping = (960, 801)
-    if flavor == 'chocolate':
-        frosting = (1275, 716)
-    if flavor == 'peach_chocolate':
-        frosting = (1275, 716)
-        topping = (831, 814)
-    if flavor == 'custard':
-        frosting = (1216, 533)
-    addMold = pyautogui.click(953, 917)
-
-    # Add Frosting
-    carry_it(frosting, PAN)
-
-    # Add Topping
-    if topping:
-        carry_it(topping, PAN)
-    ovenCenter = OVEN_LOCATIONS[make_cake.counter % 4]
-    pyautogui.dragTo(ovenCenter[0], ovenCenter[1],
-                     MOUSE_SPEED, button='left')
+def serve_item(start, stop):
+    """
+    This function moves to a location and drags an object from that location to another.
+    input:  start -> tuple containing the coordinates for the start point.
+            stop -> tuple containing the coordinates for the end point.
+    output: None
+    """
+    # Takes 0.4 secs to execute.
+    p.moveTo(start[0], start[1], MOUSE_SPEED)
+    p.dragTo(stop[0], stop[1], MOUSE_SPEED, button='left')
+    update_queue(2)
     collect_money()
-    time.sleep(4.1)
-    return ovenCenter
 
 
-def create_order(item):
-    print("**Creating: {}".format(item))
-    if item == 'coffee.png':
-        locateItem = COFFEE_LOCATIONS[create_order.counter % 3]
-        create_order.counter += 1
-        return locateItem
-    elif item == 'milk_shake.png':
-        locateItem = MS_LOCATIONS[create_order.mscounter % 3]
-        if create_order.mscounter % 3 == 0:
-            pyautogui.click(626, 834)
-        create_order.mscounter += 1
-        return locateItem
-    elif item == 'vanilla.png':
-        return make_cake('vanilla')
-    elif item == 'strawberry_vanilla.png':
-        return make_cake('strawberry_vanilla')
-    elif item == 'chocolate.png':
-        return make_cake('chocolate')
-    elif item == 'peach_chocolate.png':
-        return make_cake('peach_chocolate')
-    elif item == 'custard.png':
-        return make_cake('custard')
-    else:
-        print("{} was not found...".format(item))
+def update_queue(val):
+    if len(CAKE_QUEUE) > 0:
+        rem = 5
+        for i in range(len(CAKE_QUEUE)):
+            re = CAKE_QUEUE[i].update(val)
+            if re <= 0:
+                rem = i
+        if rem < 5:
+            CAKE_QUEUE.pop(rem).serve_cake()
 
 
-# Serve Ordered Item
-def serve_item(orderCenter, itemCenter):
-    print("***Serving: {}".format(itemCenter))
-    carry_it(itemCenter, orderCenter)
+def find_order():
+    """
+    This function searches a particular region to determine if a menu item exists in that location
+    """
+    for item in MENU:
+        for rgn in ORDER_REGIONS:
+            p.screenshot("images/data/{}.png".format(rgn[0]), region=rgn)
+            searchFor = 'images/menu/{}.png'.format(item)
+            locateItem = p.locateCenterOnScreen(
+                searchFor, region=rgn, confidence=CONF)
+            if locateItem:
+                data = {'item': item, 'location': locateItem}
+                print("Found {}".format(data))
+                ORDER.append(data)
+
+
+def prepare():
+    while len(ORDER) > 0:
+        a = ORDER.pop(0)
+        item = a['item']
+        if item == 'coffee':
+            coffeeLocation = COFFEE_LOCATIONS[prepare.coffee_count % 3]
+            prepare.coffee_count += 1
+            serve_item(coffeeLocation, a['location'])
+        elif item == 'milkshake':
+            if prepare.mscounter % 3 == 0:
+                click((626, 834))
+                ORDER.append({'item': item, 'location': a['location']})
+                prepare.mscounter += 1
+            else:
+                msLocation = MS_LOCATIONS[prepare.mscounter % 3]
+                prepare.mscounter += 1
+                serve_item(msLocation, a['location'])
+        else:
+            Cake(item, a['location'], OVEN_LOCATIONS[prepare.cakecount % 4])
+            prepare.cakecount += 1
+    while len(CAKE_QUEUE) > 0:
+        time.sleep(1)
+        update_queue(5)
 
 
 def collect_money():
-    locations = pyautogui.locateCenterOnScreen(
-        'items/served_items/money.png', confidence=CONF)
-    if locations:
-        print("****Collecting Money")
-        pyautogui.click(locations)
+    location = p.locateCenterOnScreen(
+        'images/ref/money.png', confidence=CONF)
+    # consider reducing the region when searching for money
+    if location:
+        click(location)
 # Main Control
 
 
 def main():
-    create_order.counter = 0
-    create_order.mscounter = 0
-    make_cake.counter = 0
-    count = 0
-    time.sleep(10)
-    pyautogui.click(1360, 941)
+    delay = 6
+    prepare.coffee_count = 0
+    prepare.mscounter = 0
+    prepare.cakecount = 0
+    time.sleep(delay)
+    click((626, 834))
+    prepare.mscounter += 1
     while True:
-        find_order(ORDER_REGIONS[count % 4])
-        # itemCenter = create_order(item)
-        # serve_item(orderCenter, itemCenter)
+        find_order()
+        prepare()
         collect_money()
-        count += 1
+        restart_button = p.locateCenterOnScreen(
+            'images/ref/restart.png')
+        if restart_button:
+            break
+            # restart(restart_button)
 
 
 main()
