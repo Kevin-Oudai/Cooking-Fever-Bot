@@ -26,8 +26,7 @@ PAN_LOCATIONS = [
 MENU = [
     'vanilla', 'chocolate', 'custard',
     'strawberry_vanilla',  # 'strawberry_chocolate', 'strawberry_custard',
-    # 'peach_vanilla',
-    'peach_chocolate', 'peach_custard',
+    'peach_vanilla', 'peach_chocolate', 'peach_custard',
     # 'blueberry_vanilla', 'blueberry_chocolate', 'blueberry_custard',
     'coffee', 'milkshake'
 ]
@@ -59,6 +58,9 @@ class Cake:
         if self.flavor == 'strawberry_vanilla':
             self.frosting = (1240, 623)
             self.topping = (960, 801)
+        if self.flavor == 'peach_vanilla':
+            self.frosting = (1240, 623)
+            self.topping = (860, 800)
         if self.flavor == 'chocolate':
             self.frosting = (1275, 716)
         if self.flavor == 'peach_chocolate':
