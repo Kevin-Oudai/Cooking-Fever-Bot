@@ -15,3 +15,6 @@ This is a game bot for cooking fever. It only works until level 20 of the second
 
 version 2.0
 This version works a little better than the previous version but has many bugs to resolve and the code is very messy. Will test and state the issues I am having.
+
+version 2.1
+Fixed some of the issues and now the bot survives until level 35.
